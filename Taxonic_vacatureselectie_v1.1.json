@@ -1,0 +1,834 @@
+{
+  "name": "Taxonic vacatureselectie v1.1",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 23
+            }
+          ]
+        }
+      },
+      "id": "7a085972-eb6b-4631-aecc-ca91f6ed3e00",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -2960,
+        -464
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 50,
+        "output": "raw",
+        "filtersUI": {
+          "values": {
+            "filters": {
+              "foldersToInclude": [
+                "={{ $('Code-Configuratie').first().json.inboxFolderId }}"
+              ],
+              "readStatus": "both"
+            }
+          }
+        },
+        "options": {}
+      },
+      "id": "14344434-8ad1-4fcf-8751-feb247ecc490",
+      "name": "Get many messages",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -2608,
+        -464
+      ],
+      "webhookId": "8f120417-82f0-4796-a4e6-d5a6ddf04555",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "dp9nsKXOR4sH8zGc",
+          "name": "Microsoft Outlook account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.vacatureUrl }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "f0b49d28-2a02-4274-b581-05c48e360584",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1888,
+        -704
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Je verwerkt een Nederlandse vacature voor Taxonic.\n\nJe hebt twee afzonderlijke taken:\n\n1. Beoordeel de relevantie voor iedere medewerker afzonderlijk.\n2. Maak de volledige originele vacaturetekst leesbaar als HTML.\n\nBELANGRIJKE REGELS VOOR DE VACATURE-INHOUD\n\n- Neem ALLE informatie uit de originele vacaturetekst op.\n- Laat geen enkele zin, eis, wens, voorwaarde, datum, naam, toelichting of ander inhoudelijk onderdeel weg.\n- Vat niets samen.\n- Verkort niets.\n- Herschrijf de inhoud niet.\n- Corrigeer de inhoud niet.\n- Verander geen getallen, datums, bedragen, percentages, namen of termen.\n- Voeg geen inhoudelijke informatie toe.\n- Verplaats tekst alleen wanneer dat nodig is om deze onder de juiste sectie te plaatsen.\n- Je mag uitsluitend HTML-opmaak toevoegen.\n- Gebruik duidelijke sectiekoppen, alinea’s, opsommingen en waar passend tabellen.\n- Zet eisen, wensen, werkzaamheden, verantwoordelijkheden, competenties, voorwaarden en procedurestappen bij voorkeur in opsommingen.\n- Behoud ook herhalingen uit de originele vacaturetekst.\n- Wanneer je niet zeker weet onder welke kop iets hoort, plaats je het onder \"Overige informatie\".\n- De HTML moet geschikt zijn voor een Outlook-e-mail.\n- Gebruik geen html-, head-, body-, script- of style-tags.\n- Gebruik alleen eenvoudige tags zoals div, p, strong, ul, ol, li en table.\n- Gebruik alleen inline CSS.\n- Gebruik voor HTML-attributen enkele aanhalingstekens, zodat de HTML veilig in JSON kan worden geplaatst.\n\nMEDEWERKERS\n\nBeoordeel de vacature voor iedere onderstaande medewerker afzonderlijk.\n\nVoor iedere medewerker gelden uitsluitend de keywords die bij die medewerker horen.\n\nMedewerkers:\n\n{{ JSON.stringify($('Code-Configuratie').first().json.medewerkers) }}\n\nSCORINGSREGELS\n\n- Geen relevant keyword: score maximaal 6.\n- Minimaal één aantoonbaar relevant keyword: score minimaal 7.\n- Eén relevant keyword: meestal score 7.\n- Meerdere duidelijke relevante keywords: score 8 t/m 10.\n- Baseer de score uitsluitend op de vacaturetekst.\n- Noem alleen keywords die aantoonbaar voorkomen of waarvan een duidelijke inhoudelijke variant voorkomt.\n\nOUTPUTREGELS\n\nGeef uitsluitend één geldig JSON-object terug.\n\nGebruik geen markdown.\nGebruik geen codeblok.\nSchrijf niets vóór of na het JSON-object.\n\nGebruik exact deze structuur:\n\n{\n  \"medewerkers\": [\n    {\n      \"naam\": \"Skip\",\n      \"score\": 7,\n      \"gevondenKeywords\": [\n        \"Functioneel Beheerder\"\n      ],\n      \"reden\": \"Korte feitelijke toelichting.\"\n    },\n    {\n      \"naam\": \"Ton\",\n      \"score\": 5,\n      \"gevondenKeywords\": [],\n      \"reden\": \"Korte feitelijke toelichting.\"\n    }\n  ],\n  \"vacatureHtml\": \"<div>Volledig en leesbaar opgemaakte vacature-inhoud, zonder informatieverlies.</div>\"\n}\n\nDe waarde van \"vacatureHtml\" moet geldige HTML binnen een geldige JSON-string zijn.\n\nVACATURETITEL\n\n{{ $json.vacatureTitel }}\n\nVACATURE-URL\n\n{{ $json.vacatureUrl }}\n\nVOLLEDIGE ORIGINELE VACATURETEKST\n\n{{ $json.vacatureTekst }}",
+        "messages": {
+          "messageValues": []
+        },
+        "batching": {}
+      },
+      "id": "944f3a82-b8f6-415e-b335-69db2329951d",
+      "name": "Basic LLM Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -1240,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "3508f07a-af82-4afe-a5f4-306a5791f3f3",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -1160,
+        -304
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "wfKIVrkMTgxJCBTQ",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4ae6db4e-36ed-4048-8306-6570b483174a",
+              "leftValue": "={{ Number($json.score) }}",
+              "rightValue": "={{ $('Code-Configuratie').first().json.minimumScore }}",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "65e1b360-c88d-43bb-8b28-9c406a34b2eb",
+      "name": "If",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -752,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "toRecipients": "={{ $('Code-Configuratie').first().json.emailOntvanger }}",
+        "subject": "={{ [\n  $json.broker,\n  $json.medewerker,\n  $json.vacatureTitel\n].filter(v => v && String(v).trim() !== '').join(' - ') }}",
+        "bodyContent": "={{ (() => {\n  const d = $json;\n\n  const hasValue = (value) => {\n    if (value === null || value === undefined) return false;\n\n    if (Array.isArray(value)) {\n      return value.some(item => hasValue(item));\n    }\n\n    return String(value).trim() !== '';\n  };\n\n  const escapeHtml = (value) => String(value ?? '')\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#039;');\n\n  const formatPlainText = (value) => escapeHtml(value)\n    .replace(/\\r\\n/g, '\\n')\n    .replace(/\\r/g, '\\n')\n    .replace(/\\n{3,}/g, '\\n\\n')\n    .replace(/\\n/g, '<br>');\n\n  const row = (label, value) => {\n    if (!hasValue(value)) return '';\n\n    const displayedValue = Array.isArray(value)\n      ? value.filter(hasValue).join(', ')\n      : value;\n\n    return `\n      <div style='margin-bottom:6px;'>\n        <strong>${escapeHtml(label)}:</strong>\n        ${formatPlainText(displayedValue)}\n      </div>\n    `;\n  };\n\n  const keywords = Array.isArray(d.gevondenKeywords)\n    ? d.gevondenKeywords.filter(hasValue)\n    : [];\n\n  const matchSection = `\n    <div style='\n      margin-top:18px;\n      padding:14px;\n      border:1px solid #d9d9d9;\n      background-color:#f7f7f7;\n    '>\n      <div style='font-weight:bold; margin-bottom:10px;'>\n        MATCH\n      </div>\n\n      ${row('Medewerker', d.medewerker)}\n      ${row('Score', hasValue(d.score) ? `${d.score}/10` : '')}\n    </div>\n  `;\n\n  const keywordsSection = keywords.length > 0\n    ? `\n      <div style='\n        margin-top:22px;\n        border-top:1px solid #d9d9d9;\n        padding-top:14px;\n      '>\n        <div style='font-weight:bold; margin-bottom:10px;'>\n          GEVONDEN KEYWORDS\n        </div>\n\n        <ul style='margin:0; padding-left:22px; line-height:1.5;'>\n          ${keywords\n            .map(keyword => `\n              <li style='margin-bottom:5px;'>\n                ${escapeHtml(keyword)}\n              </li>\n            `)\n            .join('')}\n        </ul>\n      </div>\n    `\n    : '';\n\n  const assessmentSection = hasValue(d.reden)\n    ? `\n      <div style='\n        margin-top:22px;\n        border-top:1px solid #d9d9d9;\n        padding-top:14px;\n      '>\n        <div style='font-weight:bold; margin-bottom:10px;'>\n          BEOORDELING\n        </div>\n\n        <div style='line-height:1.5;'>\n          ${formatPlainText(d.reden)}\n        </div>\n      </div>\n    `\n    : '';\n\n  const vacancyContent = hasValue(d.vacatureHtml)\n    ? d.vacatureHtml\n    : `\n      <div style='\n        white-space:normal;\n        overflow-wrap:anywhere;\n        line-height:1.6;\n      '>\n        ${formatPlainText(d.vacatureTekst)}\n      </div>\n    `;\n\n  const vacancySection =\n    hasValue(d.vacatureHtml) || hasValue(d.vacatureTekst)\n      ? `\n        <div style='\n          margin-top:22px;\n          border-top:1px solid #d9d9d9;\n          padding-top:14px;\n        '>\n          <div style='font-weight:bold; margin-bottom:14px;'>\n            VOLLEDIGE VACATURE\n          </div>\n\n          <div style='\n            font-family:Arial, Helvetica, sans-serif;\n            font-size:14px;\n            line-height:1.55;\n            color:#222222;\n            overflow-wrap:anywhere;\n          '>\n            ${vacancyContent}\n          </div>\n        </div>\n      `\n      : '';\n\n  const urlSection = hasValue(d.vacatureUrl)\n    ? `\n      <div style='\n        margin-top:22px;\n        border-top:1px solid #d9d9d9;\n        padding-top:14px;\n      '>\n        <div style='font-weight:bold; margin-bottom:8px;'>\n          ORIGINELE VACATURE\n        </div>\n\n        <a\n          href='${escapeHtml(d.vacatureUrl)}'\n          target='_blank'\n          style='color:#800080; text-decoration:underline;'\n        >\n          Bekijk de originele vacature\n        </a>\n      </div>\n    `\n    : '';\n\n  return `\n    <div style='\n      font-family:Arial, Helvetica, sans-serif;\n      font-size:14px;\n      line-height:1.45;\n      color:#222222;\n      max-width:900px;\n    '>\n\n      <div style='font-weight:bold; margin-bottom:12px;'>\n        VACATURE\n      </div>\n\n      ${row('Functie', d.vacatureTitel)}\n      ${row('Broker', d.broker)}\n      ${row('Referentienummer', d.referentienummer)}\n      ${row('Categorie', d.categorie)}\n\n      ${matchSection}\n\n      ${vacancySection}\n\n      ${keywordsSection}\n\n      ${assessmentSection}\n\n      ${urlSection}\n\n    </div>\n  `;\n})() }}",
+        "additionalFields": {
+          "bodyContentType": "html"
+        }
+      },
+      "id": "84eb472e-842c-4953-ba98-65b5fe1f83e7",
+      "name": "Send a message",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        -592
+      ],
+      "webhookId": "c9d0ef02-9b7d-41b3-a6e4-1ee61e373708",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "dp9nsKXOR4sH8zGc",
+          "name": "Microsoft Outlook account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500
+    },
+    {
+      "parameters": {
+        "jsCode": "const httpItems = $input.all();\nconst urlItems = $('Code-Exctract URL').all();\n\n/**\n * Decodeert de meest voorkomende HTML-entiteiten,\n * inclusief numerieke entiteiten.\n */\nfunction decodeHtml(value = '') {\n  return String(value)\n    .replace(/&#(\\d+);/g, (_, code) =>\n      String.fromCodePoint(Number(code))\n    )\n    .replace(/&#x([0-9a-f]+);/gi, (_, code) =>\n      String.fromCodePoint(parseInt(code, 16))\n    )\n    .replace(/&nbsp;/gi, ' ')\n    .replace(/&amp;/gi, '&')\n    .replace(/&quot;/gi, '\"')\n    .replace(/&apos;/gi, \"'\")\n    .replace(/&#39;/gi, \"'\")\n    .replace(/&lt;/gi, '<')\n    .replace(/&gt;/gi, '>');\n}\n\n/**\n * Zet HTML om naar leesbare platte tekst.\n */\nfunction htmlNaarTekst(html = '') {\n  return decodeHtml(\n    String(html)\n      .replace(/<script\\b[^>]*>[\\s\\S]*?<\\/script>/gi, ' ')\n      .replace(/<style\\b[^>]*>[\\s\\S]*?<\\/style>/gi, ' ')\n      .replace(/<noscript\\b[^>]*>[\\s\\S]*?<\\/noscript>/gi, ' ')\n      .replace(/<svg\\b[^>]*>[\\s\\S]*?<\\/svg>/gi, ' ')\n      .replace(/<!--[\\s\\S]*?-->/g, ' ')\n      .replace(/<(br|hr)\\s*\\/?>/gi, '\\n')\n      .replace(\n        /<\\/(p|div|section|article|li|h1|h2|h3|h4|h5|h6|tr)>/gi,\n        '\\n'\n      )\n      .replace(/<li\\b[^>]*>/gi, '• ')\n      .replace(/<[^>]+>/g, ' ')\n  )\n    .replace(/\\r/g, '')\n    .replace(/[ \\t]+/g, ' ')\n    .replace(/ *\\n */g, '\\n')\n    .replace(/\\n{3,}/g, '\\n\\n')\n    .trim();\n}\n\n/**\n * Haalt de inhoud van een meta-tag op.\n */\nfunction haalMetaContent(html, naam) {\n  const escapedNaam = naam.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\n\n  const patronen = [\n    new RegExp(\n      `<meta[^>]+(?:name|property)=[\"']${escapedNaam}[\"'][^>]+content=[\"']([^\"']*)[\"'][^>]*>`,\n      'i'\n    ),\n    new RegExp(\n      `<meta[^>]+content=[\"']([^\"']*)[\"'][^>]+(?:name|property)=[\"']${escapedNaam}[\"'][^>]*>`,\n      'i'\n    )\n  ];\n\n  for (const patroon of patronen) {\n    const match = String(html).match(patroon);\n\n    if (match?.[1]) {\n      return decodeHtml(match[1]).trim();\n    }\n  }\n\n  return '';\n}\n\n/**\n * Haalt de vacaturetitel uit de HTML.\n */\nfunction haalTitel(html) {\n  const ogTitel = haalMetaContent(html, 'og:title');\n\n  if (ogTitel) {\n    return ogTitel\n      .replace(/\\s*-\\s*LibLab\\s*-\\s*Libertas Labor\\s*$/i, '')\n      .replace(/\\s*-\\s*LibLab\\s*$/i, '')\n      .trim();\n  }\n\n  const titleMatch = String(html).match(\n    /<title[^>]*>([\\s\\S]*?)<\\/title>/i\n  );\n\n  if (titleMatch?.[1]) {\n    return decodeHtml(titleMatch[1])\n      .replace(/\\s*-\\s*LibLab\\s*-\\s*Libertas Labor\\s*$/i, '')\n      .replace(/\\s*-\\s*LibLab\\s*$/i, '')\n      .trim();\n  }\n\n  const h1Match = String(html).match(\n    /<h1[^>]*>([\\s\\S]*?)<\\/h1>/i\n  );\n\n  if (h1Match?.[1]) {\n    return htmlNaarTekst(h1Match[1]);\n  }\n\n  return '';\n}\n\n/**\n * Probeert alleen het inhoudelijke vacaturegedeelte te pakken.\n * Valt terug op de volledige pagina wanneer het blok niet wordt gevonden.\n */\nfunction haalVacatureTekst(html) {\n  const patronen = [\n    /<div[^>]+class=[\"'][^\"']*awsm-job-content[^\"']*[\"'][^>]*>([\\s\\S]*?)<div[^>]+class=[\"'][^\"']*awsm-job-form/gi,\n    /<div[^>]+class=[\"'][^\"']*awsm-job-content[^\"']*[\"'][^>]*>([\\s\\S]*?)<\\/div>\\s*<\\/div>/gi,\n    /<article[^>]*>([\\s\\S]*?)<\\/article>/gi,\n    /<main[^>]*>([\\s\\S]*?)<\\/main>/gi\n  ];\n\n  for (const patroon of patronen) {\n    const match = patroon.exec(String(html));\n\n    if (match?.[1]) {\n      const tekst = htmlNaarTekst(match[1]);\n\n      if (tekst.length >= 100) {\n        return tekst;\n      }\n    }\n  }\n\n  return htmlNaarTekst(html);\n}\n\n/**\n * Sommige LibLab-pagina's beginnen de meta description met:\n * \"Kadaster Kadaster registreert...\"\n *\n * Deze functie herkent zo'n herhaalde naam.\n */\nfunction haalHerhaaldeNaamUitBeschrijving(beschrijving) {\n  const woorden = String(beschrijving)\n    .replace(/[|•]/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim()\n    .split(' ')\n    .filter(Boolean);\n\n  const maximaalAantalWoorden = Math.min(\n    6,\n    Math.floor(woorden.length / 2)\n  );\n\n  for (let aantal = maximaalAantalWoorden; aantal >= 1; aantal--) {\n    const eersteDeel = woorden.slice(0, aantal).join(' ');\n    const tweedeDeel = woorden.slice(aantal, aantal * 2).join(' ');\n\n    const normaliseer = waarde =>\n      waarde\n        .toLowerCase()\n        .replace(/[.,;:!?()[\\]{}\"'’]/g, '')\n        .trim();\n\n    if (\n      normaliseer(eersteDeel) &&\n      normaliseer(eersteDeel) === normaliseer(tweedeDeel)\n    ) {\n      return eersteDeel\n        .replace(/[.,;:!?]+$/g, '')\n        .trim();\n    }\n  }\n\n  return '';\n}\n\n/**\n * Extra fallback: opdrachtgever uit een JSON-LD afbeeldingscaption.\n * Bijvoorbeeld: \"Het Kadaster\".\n */\nfunction haalCaptionUitJsonLd(html) {\n  const matches = String(html).matchAll(\n    /\"caption\"\\s*:\\s*\"([^\"]+)\"/gi\n  );\n\n  for (const match of matches) {\n    const caption = decodeHtml(\n      match[1]\n        .replace(/\\\\\\//g, '/')\n        .replace(/\\\\\"/g, '\"')\n    ).trim();\n\n    if (\n      caption &&\n      !/liblab|logo|avatar|profielfoto/i.test(caption)\n    ) {\n      return caption;\n    }\n  }\n\n  return '';\n}\n\n/**\n * Probeert opdrachtgever uit de vacaturepagina af te leiden.\n */\nfunction haalOpdrachtgever(html, vacatureTekst) {\n  const description =\n    haalMetaContent(html, 'description') ||\n    haalMetaContent(html, 'og:description') ||\n    haalMetaContent(html, 'twitter:description');\n\n  const herhaaldeNaam =\n    haalHerhaaldeNaamUitBeschrijving(description);\n\n  if (herhaaldeNaam) {\n    return herhaaldeNaam;\n  }\n\n  const caption = haalCaptionUitJsonLd(html);\n\n  if (caption) {\n    return caption;\n  }\n\n  const tekstPatronen = [\n    /(?:opdrachtgever|organisatie|klant)\\s*[:\\-]\\s*([^\\n|]{2,100})/i,\n    /(?:werken bij|voor)\\s+([A-ZÀ-Ý][^\\n,.]{2,80})/i\n  ];\n\n  for (const patroon of tekstPatronen) {\n    const match = String(vacatureTekst).match(patroon);\n\n    if (match?.[1]) {\n      return match[1]\n        .replace(/\\s+/g, ' ')\n        .replace(/[.;,:]+$/g, '')\n        .trim();\n    }\n  }\n\n  return '';\n}\n\nreturn httpItems.map((item, index) => {\n  const httpData = item.json ?? {};\n  const urlData = urlItems[index]?.json ?? {};\n\n  const ruweHtml =\n    typeof httpData.data === 'string'\n      ? httpData.data\n      : typeof httpData.body === 'string'\n        ? httpData.body\n        : typeof httpData.content === 'string'\n          ? httpData.content\n          : '';\n\n  const vacatureTitel =\n    httpData.vacatureTitel ||\n    httpData.titel ||\n    httpData.title ||\n    urlData.vacatureTitel ||\n    urlData.titel ||\n    urlData.title ||\n    haalTitel(ruweHtml);\n\n  const vacatureTekst =\n    httpData.vacatureTekst ||\n    httpData.tekst ||\n    httpData.text ||\n    haalVacatureTekst(ruweHtml);\n\n  const vacatureUrl =\n    urlData.vacatureUrl ||\n    urlData.url ||\n    httpData.vacatureUrl ||\n    httpData.url ||\n    '';\n\n  const broker =\n    urlData.broker ||\n    httpData.broker ||\n    urlData.brokerNaam ||\n    httpData.brokerNaam ||\n    '';\n\n  const opdrachtgever =\n    urlData.opdrachtgever ||\n    httpData.opdrachtgever ||\n    urlData.klant ||\n    httpData.klant ||\n    urlData.klantNaam ||\n    httpData.klantNaam ||\n    haalOpdrachtgever(ruweHtml, vacatureTekst);\n\n  const brokerEmail =\n    urlData.brokerEmail ||\n    httpData.brokerEmail ||\n    '';\n\n  const emailOntvangenOp =\n    urlData.emailOntvangenOp ||\n    httpData.emailOntvangenOp ||\n    '';\n\n  const bronBerichtId =\n    urlData.bronBerichtId ||\n    httpData.bronBerichtId ||\n    '';\n\n  const bronBerichtOnderwerp =\n    urlData.bronBerichtOnderwerp ||\n    httpData.bronBerichtOnderwerp ||\n    '';\n\n  return {\n    json: {\n      vacatureTitel,\n      vacatureTekst,\n      vacatureUrl,\n      broker,\n      brokerEmail,\n      opdrachtgever,\n      emailOntvangenOp,\n      bronBerichtId,\n      bronBerichtOnderwerp,\n      bronHtml: ruweHtml\n    },\n    pairedItem: {\n      item: index\n    }\n  };\n});"
+      },
+      "id": "93e685de-0af8-4099-b599-5511a2b791ad",
+      "name": "Code-Titel + Tekst + URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1728,
+        -704
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = [];\nconst gevondenUrls = new Set();\n\nconst inputItems = $input.all();\n\nfor (let inputIndex = 0; inputIndex < inputItems.length; inputIndex++) {\n  const item = inputItems[inputIndex];\n\n  const body =\n    item.json.body?.content ||\n    item.json.body ||\n    item.json.text ||\n    item.json.content ||\n    '';\n\n  const text =\n    typeof body === 'string'\n      ? body\n      : JSON.stringify(body);\n\n  const bronBerichtId =\n    item.json.id ||\n    '';\n\n  const bronBerichtOnderwerp =\n    item.json.subject ||\n    '';\n\n  const brokerNaam =\n    item.json.from?.emailAddress?.name ||\n    item.json.sender?.emailAddress?.name ||\n    '';\n\n  const brokerEmail =\n    item.json.from?.emailAddress?.address ||\n    item.json.sender?.emailAddress?.address ||\n    '';\n\n  const emailOntvangenOp =\n    item.json.receivedDateTime ||\n    item.json.createdDateTime ||\n    '';\n\n  const matches =\n    text.match(\n      /https?:\\/\\/(?:www\\.)?liblab\\.nl\\/opdrachten\\/[^\\s\"'<>]+/gi\n    ) || [];\n\n  for (const match of matches) {\n    const vacatureUrl = match\n      .replace(/&amp;/gi, '&')\n      .replace(/[),.;]+$/g, '')\n      .trim();\n\n    if (!vacatureUrl || gevondenUrls.has(vacatureUrl)) {\n      continue;\n    }\n\n    gevondenUrls.add(vacatureUrl);\n\n    result.push({\n      json: {\n        vacatureUrl,\n        broker: brokerNaam,\n        brokerEmail,\n        emailOntvangenOp,\n        bronBerichtId,\n        bronBerichtOnderwerp\n      },\n      pairedItem: {\n        item: inputIndex\n      }\n    });\n  }\n}\n\nlet limiet = result.length;\n\ntry {\n  const cfg = $('Code-Configuratie').first().json;\n\n  if (\n    cfg?.testmodus &&\n    Number(cfg.maximaalAantalVacatures) > 0\n  ) {\n    limiet = Number(cfg.maximaalAantalVacatures);\n  }\n} catch (e) {}\n\nreturn result.slice(0, limiet);"
+      },
+      "id": "8fa0bada-3dc2-45fd-b5bf-788c8fd6d858",
+      "name": "Code-Exctract URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2064,
+        -704
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputItems = $input.all();\nconst output = [];\n\nfor (let i = 0; i < inputItems.length; i++) {\n  const item = inputItems[i];\n  const input = item.json;\n\n  // Ruwe waarde uit de LLM-node halen.\n  const rawValue =\n    input.output ??\n    input.text ??\n    input.content ??\n    input.response ??\n    input.body ??\n    input;\n\n  let parsed;\n\n  if (rawValue !== null && typeof rawValue === 'object') {\n    parsed = rawValue;\n  } else {\n    if (typeof rawValue !== 'string' || rawValue.trim() === '') {\n      throw new Error(\n        `Geen geldige JSON-tekst ontvangen. Beschikbare velden: ${Object.keys(input).join(', ')}`\n      );\n    }\n\n    let cleaned = rawValue\n      .trim()\n      .replace(/^```(?:json)?\\s*/i, '')\n      .replace(/\\s*```$/, '')\n      .trim();\n\n    try {\n      parsed = JSON.parse(cleaned);\n    } catch (error) {\n      throw new Error(\n        `Ongeldige JSON ontvangen: ${error.message}. Begin van de invoer: ${cleaned.slice(0, 300)}`\n      );\n    }\n  }\n\n  // Bijbehorende vacaturegegevens ophalen uit de juiste bronnode via de\n  // paired-item-relatie. Beide takken (LibLab en Circle8) komen samen in\n  // dezelfde LLM-node, dus koppelen op index i is onbetrouwbaar: itemMatching\n  // volgt de paired-item-keten terug naar de echte bron van dit item.\n  let bron = {};\n\n  const heeftVacatureData = (obj) =>\n    obj && (obj.vacatureTitel || obj.vacatureUrl || obj.vacatureTekst);\n\n  // 1) Probeer eerst de centrale validatie-/deduplicatienode.\n  try {\n    const m = $('Code-Validatie + Deduplicatie').itemMatching(i);\n    if (heeftVacatureData(m?.json)) {\n      bron = m.json;\n    }\n  } catch (e) {}\n\n  // 2) Fallback naar de oorspronkelijke bronnodes.\n  if (!heeftVacatureData(bron)) {\n    try {\n      const m = $('Code-Titel + Tekst + URL').itemMatching(i);\n      if (heeftVacatureData(m?.json)) {\n        bron = m.json;\n      }\n    } catch (e) {}\n  }\n\n  if (!heeftVacatureData(bron)) {\n    try {\n      const m = $('Code-Circle8 e-mail naar vacature').itemMatching(i);\n      if (heeftVacatureData(m?.json)) {\n        bron = m.json;\n      }\n    } catch (e) {}\n  }\n\n  if (!heeftVacatureData(bron)) {\n    try {\n      const m = $('Code-DPP detail').itemMatching(i);\n      if (heeftVacatureData(m?.json)) {\n        bron = m.json;\n      }\n    } catch (e) {}\n  }\n\n  // 2) Fallback op index i, mocht paired-item niet beschikbaar zijn.\n  if (!heeftVacatureData(bron)) {\n    try {\n      const bronItems = $('Code-Titel + Tekst + URL').all();\n      if (heeftVacatureData(bronItems[i]?.json)) {\n        bron = bronItems[i].json;\n      }\n    } catch (e) {}\n  }\n\n  if (!heeftVacatureData(bron)) {\n    try {\n      const bronItems = $('Code-Circle8 e-mail naar vacature').all();\n      if (heeftVacatureData(bronItems[i]?.json)) {\n        bron = bronItems[i].json;\n      }\n    } catch (e) {}\n  }\n\n  if (!heeftVacatureData(bron)) {\n    try {\n      const bronItems = $('Code-DPP detail').all();\n      if (heeftVacatureData(bronItems[i]?.json)) {\n        bron = bronItems[i].json;\n      }\n    } catch (e) {}\n  }\n\n  const vacatureHtml = parsed.vacatureHtml ?? '';\n  const medewerkers = Array.isArray(parsed.medewerkers) ? parsed.medewerkers : [];\n\n  // Eén output-item per medewerker, met platgeslagen velden.\n  for (const medewerker of medewerkers) {\n    output.push({\n      json: {\n        medewerker: medewerker.naam ?? '',\n        score: Number(medewerker.score ?? 0),\n        gevondenKeywords: Array.isArray(medewerker.gevondenKeywords)\n          ? medewerker.gevondenKeywords\n          : [],\n        reden: medewerker.reden ?? '',\n\n        vacatureHtml,\n        vacatureTitel: bron.vacatureTitel ?? '',\n        vacatureUrl: bron.vacatureUrl ?? '',\n        vacatureTekst: bron.vacatureTekst ?? '',\n        broker: bron.broker ?? '',\n        brokerEmail: bron.brokerEmail ?? '',\n        opdrachtgever: bron.opdrachtgever ?? '',\n        bronBerichtId: bron.bronBerichtId ?? '',\n        bronBerichtOnderwerp: bron.bronBerichtOnderwerp ?? '',\n        emailOntvangenOp: bron.emailOntvangenOp ?? '',\n        deduplicatieSleutel: bron.deduplicatieSleutel ?? '',\n        workflowVersie: bron.workflowVersie ?? '1.1',\n      },\n      pairedItem: { item: i },\n    });\n  }\n}\n\nreturn output;"
+      },
+      "id": "a178a125-86c4-4865-9a1f-8f0ae36313a5",
+      "name": "Code-JSON.parse",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -992,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      workflowNaam: 'Taxonic vacatureselectie',\n      workflowVersie: '1.1',\n      configuratieVersie: '1.1',\n\n      testmodus: true,\n      maximaalAantalVacatures: 30,\n\n      minimumScore: 7,\n\n      emailOntvanger: 'consultancy@taxonic.com',\n\n      promptVersie: '1.1',\n\n      deduplicatieDagen: 90,\n      httpTimeoutMs: 30000,\n      retryAantal: 3,\n\n      inboxFolderId:\n        'AQMkADNmM2M2ZTU3LWI3NmItNDVhNy1iMmQ5LTM3ZDdjNmUyMgA5ODMALgAAAxmUX-xvSPBKhbKJIar0H68BAJrcFUadI5hAsmAeqtJMh2cAAAIBDAAAAA==',\n\n      archiveFolderId:\n        'AQMkADNmM2M2ZTU3LWI3NmItNDVhNy1iMmQ5LTM3ZDdjNmUyMgA5ODMALgAAAxmUX-xvSPBKhbKJIar0H68BAJrcFUadI5hAsmAeqtJMh2cAAAIBFwAAAA==',\n\n      brokers: {\n        liblab: {\n          naam: 'LibLab',\n          email: 'no-reply@liblab.nl',\n          type: 'website'\n        },\n\n        circle8: {\n          naam: 'Circle8',\n          email: 'recruitment@circle8.nl',\n          type: 'email'\n        },\n\n        depubliekepartner: {\n          naam: 'de Publieke Partner',\n          email: 'recruitment@depubliekepartner.nl',\n          type: 'email+website'\n        }\n      },\n\n      medewerkers: [\n        {\n          naam: 'Skip',\n          keywords: [\n            '2nd Line Support',\n            '3rd Line Support',\n            'Analist',\n            'Analyst',\n            'Applicatie Consultant',\n            'Applicatie Support',\n            'Applicatiebeheer',\n            'Applicatiebeheerder',\n            'Applicatieconsultant',\n            'Applicatiecoördinator',\n            'Application Consultant',\n            'Application Support',\n            'Bedrijfsanalist',\n            'Business Analist',\n            'Business Analyst',\n            'Case Management Administrator',\n            'Case Manager',\n            'Domein Analist',\n            'Functional Analyst',\n            'Functional Consultant',\n            'Functional Designer',\n            'Functional Support Consultant',\n            'Functioneelbeheerder',\n            'Functioneel Analist',\n            'Functioneel Applicatiebeheer',\n            'Functioneel Applicatiebeheerder',\n            'Functioneel Beheer',\n            'Functioneel Beheerder',\n            'Functioneel Consultant',\n            'Functioneel Medewerker',\n            'Functioneel Ontwerper',\n            'ICT Beheerder',\n            'Informatie Analist',\n            'Informatieanalist',\n            'Informatiebeheerder',\n            'Information Analyst',\n            'Modelleur Platform Dienstverlening',\n            'Platform Dienstverlening Specialist',\n            'Proces analist',\n            'Procesbeheerder',\n            'Process Analyst',\n            'Requirements Engineer',\n            'Support Consultant',\n            'Zaakbeheerder',\n            'Zaaksysteembeheerder'\n          ]\n        },\n        {\n          naam: 'Ton',\n          keywords: [\n            'Projectleider',\n            'Project Manager',\n            'Projectmanager',\n            'Programmamanagement',\n            'Programmamanager',\n            'Program Manager',\n            'Portfolio Manager',\n            'Portfoliomanager',\n            'PMO Manager',\n            'PMO Lead',\n            'PMO Consultant',\n            'Implementatiemanager',\n            'Implementatieconsultant',\n            'Implementatie Projectleider',\n            'Implementatie Projectmanager',\n            'Implementation Manager',\n            'Implementation Consultant',\n            'Implementation Project Manager',\n            'Rollout Manager',\n            'Transitiemanager',\n            'Transition Manager',\n            'Migratiemanager',\n            'Migration Manager',\n            'Scrum Master',\n            'Agile Project Manager',\n            'Agile Delivery Manager',\n            'Delivery Manager',\n            'Delivery Lead',\n            'Release Manager',\n            'Agile Coach',\n            'Project Consultant',\n            'Managing Consultant',\n            'Senior Consultant',\n            'Product Owner',\n            'Product Manager',\n            'PMO'\n          ]\n        }\n      ]\n    }\n  }\n];"
+      },
+      "id": "5a434fd8-e535-4fa0-b3fc-b21fba40a1ec",
+      "name": "Code-Configuratie",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2768,
+        -464
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "messageId": {
+          "__rl": true,
+          "value": "={{ $json.bronBerichtId }}",
+          "mode": "id"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $('Code-Configuratie').first().json.archiveFolderId }}",
+          "mode": "id"
+        }
+      },
+      "id": "a96c2173-8da4-4298-ae17-a11e65df7baf",
+      "name": "Move a message",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        160,
+        -480
+      ],
+      "webhookId": "7ef55270-c35e-4eb2-a981-e9eda3131408",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "dp9nsKXOR4sH8zGc",
+          "name": "Microsoft Outlook account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500
+    },
+    {
+      "parameters": {
+        "jsCode": "// Bron-ID's halen uit Code-JSON.parse: daar hebben ALLE verwerkte vacatures\n// nog hun bronBerichtId (ongeacht score of of er een mail is verstuurd).\n// De Merge-input bevat na 'Send a message' alleen { success: true } zonder\n// bronBerichtId, waardoor verstuurde vacatures anders niet gearchiveerd worden.\nlet inputItems = [];\ntry {\n  inputItems = $('Code-JSON.parse').all();\n} catch (e) {}\n\nif (inputItems.length === 0) {\n  inputItems = $input.all();\n}\n\nif (inputItems.length === 0) {\n  return [];\n}\n\nconst uniekeBerichten = new Map();\nconst ontbrekendeVelden = [];\n\nfor (const [index, item] of inputItems.entries()) {\n  const bronBerichtId = item.json.bronBerichtId;\n\n  if (bronBerichtId === undefined || bronBerichtId === null || bronBerichtId === '') {\n    ontbrekendeVelden.push({\n      index,\n      beschikbareVelden: Object.keys(item.json),\n    });\n    continue;\n  }\n\n  const sleutel = String(bronBerichtId).trim();\n\n  if (!uniekeBerichten.has(sleutel)) {\n    uniekeBerichten.set(sleutel, {\n      json: {\n        bronBerichtId: sleutel,\n        bronBerichtOnderwerp: item.json.bronBerichtOnderwerp ?? '',\n        broker: item.json.broker ?? '',\n        brokerEmail: item.json.brokerEmail ?? '',\n        emailOntvangenOp: item.json.emailOntvangenOp ?? '',\n      },\n    });\n  }\n}\n\nif (uniekeBerichten.size === 0) {\n  return [];\n}\n\nreturn Array.from(uniekeBerichten.values());"
+      },
+      "id": "ce8d7364-41f4-4655-b21d-45a36c633cdf",
+      "name": "Code-Unieke bronberichten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        -480
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "ecb24445-ea78-4a0a-a15a-829a602dc403",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -320,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function haalAfzenderEmailOp(message = {}) {\n  const mogelijkeWaarden = [\n    message.from?.emailAddress?.address,\n    message.sender?.emailAddress?.address,\n    message.from?.address,\n    message.sender?.address,\n    message.from,\n    message.sender\n  ];\n\n  for (const waarde of mogelijkeWaarden) {\n    if (typeof waarde === 'string' && waarde.trim()) {\n      return waarde.trim().toLowerCase();\n    }\n  }\n\n  return '';\n}\n\nfunction bepaalBron(brokerEmail = '') {\n  const bronnen = {\n    'no-reply@liblab.nl': {\n      bronCode: 'liblab',\n      broker: 'LibLab'\n    },\n\n    'recruitment@circle8.nl': {\n      bronCode: 'circle8',\n      broker: 'Circle8'\n    },\n\n    'recruitment@depubliekepartner.nl': {\n      bronCode: 'depubliekepartner',\n      broker: 'de Publieke Partner'\n    }\n  };\n\n  return bronnen[brokerEmail] ?? {\n    bronCode: 'onbekend',\n    broker: 'Onbekend'\n  };\n}\n\nreturn $input.all().map((item) => {\n  const message = item.json;\n  const brokerEmail = haalAfzenderEmailOp(message);\n  const bron = bepaalBron(brokerEmail);\n\n  return {\n    json: {\n      ...message,\n\n      bronCode: bron.bronCode,\n      broker: bron.broker,\n      brokerEmail,\n\n      bronBerichtId: message.id ?? '',\n      bronBerichtOnderwerp: String(message.subject ?? '').trim(),\n\n      emailOntvangenOp:\n        message.receivedDateTime ??\n        message.sentDateTime ??\n        ''\n    }\n  };\n});"
+      },
+      "id": "b2a67a73-8392-4041-a57a-87e8a58fb7e7",
+      "name": "Code-Bron herkennen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2416,
+        -464
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "8a49eedd-7c17-4515-aae8-c70b2cd0bb02",
+                    "leftValue": "={{ $json.bronCode }}",
+                    "rightValue": "liblab",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "d6501855-d219-479c-8aaa-ba97e28b561f",
+                    "leftValue": "={{ $json.bronCode }}",
+                    "rightValue": "circle8",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "4068f6ff-9044-4282-af71-63f2b9a6d779",
+                    "leftValue": "={{ $json.bronCode }}",
+                    "rightValue": "onbekend",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c3f1a9d0-77aa-4b21-9e8c-dpp0000switch",
+                    "leftValue": "={{ $json.bronCode }}",
+                    "rightValue": "depubliekepartner",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8fe5980a-de1d-4264-81dd-5e953c19a723",
+      "name": "Switch-Bron",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -2224,
+        -496
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function htmlNaarTekst(html = '') {\n  return String(html)\n    .replace(/<style[\\s\\S]*?<\\/style>/gi, ' ')\n    .replace(/<script[\\s\\S]*?<\\/script>/gi, ' ')\n    .replace(/<br\\s*\\/?>/gi, '\\n')\n    .replace(/<\\/p>/gi, '\\n')\n    .replace(/<\\/div>/gi, '\\n')\n    .replace(/<\\/li>/gi, '\\n')\n    .replace(/<li[^>]*>/gi, '• ')\n    .replace(/<\\/tr>/gi, '\\n')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/&nbsp;/gi, ' ')\n    .replace(/&amp;/gi, '&')\n    .replace(/&lt;/gi, '<')\n    .replace(/&gt;/gi, '>')\n    .replace(/&quot;/gi, '\"')\n    .replace(/&#39;/gi, \"'\")\n    .replace(/&euro;/gi, '€');\n}\n\nfunction normaliseerTekst(tekst = '') {\n  return String(tekst)\n    .replace(/\\r\\n/g, '\\n')\n    .replace(/\\r/g, '\\n')\n    .replace(/\\u00a0/g, ' ')\n    .replace(/[ \\t]+/g, ' ')\n    .replace(/ *\\n */g, '\\n')\n    .replace(/\\n{3,}/g, '\\n\\n')\n    .trim();\n}\n\nfunction verwijderHandtekening(tekst = '') {\n  const markers = [\n    '\\nMet vriendelijke groet',\n    '\\nKind regards',\n    '\\nRECRUITMENT & RESOURCING',\n    '\\nDisclaimer:'\n  ];\n\n  let eindPositie = tekst.length;\n\n  for (const marker of markers) {\n    const positie = tekst.toLowerCase().indexOf(marker.toLowerCase());\n\n    if (positie !== -1 && positie < eindPositie) {\n      eindPositie = positie;\n    }\n  }\n\n  return tekst.slice(0, eindPositie).trim();\n}\n\nfunction zoekWaarde(tekst, patroon, groep = 1) {\n  const resultaat = String(tekst).match(patroon);\n\n  if (!resultaat) {\n    return '';\n  }\n\n  return String(resultaat[groep] ?? '').trim();\n}\n\nfunction haalVacatureUrlUitHtml(html = '') {\n  const vacatureLink = String(html).match(\n    /<a[^>]+href=[\"']([^\"']+)[\"'][^>]*>[\\s\\S]*?vacature op onze website[\\s\\S]*?<\\/a>/i\n  );\n\n  if (vacatureLink?.[1]) {\n    return vacatureLink[1]\n      .replace(/&amp;/gi, '&')\n      .trim();\n  }\n\n  return '';\n}\n\nconst output = [];\n\nfor (const item of $input.all()) {\n  const bericht = item.json;\n\n  const onderwerp = String(\n    bericht.bronBerichtOnderwerp ??\n    bericht.subject ??\n    ''\n  ).trim();\n\n  const bodyInhoud = String(\n    bericht.body?.content ??\n    bericht.body?.Content ??\n    bericht.body ??\n    bericht.bodyPreview ??\n    ''\n  );\n\n  const bodyType = String(\n    bericht.body?.contentType ??\n    bericht.body?.ContentType ??\n    ''\n  ).toLowerCase();\n\n  let volledigeTekst;\n\n  if (bodyType === 'html' || /<[^>]+>/.test(bodyInhoud)) {\n    volledigeTekst = htmlNaarTekst(bodyInhoud);\n  } else {\n    volledigeTekst = bodyInhoud;\n  }\n\n  volledigeTekst = normaliseerTekst(volledigeTekst);\n\n  const vacatureTekst = verwijderHandtekening(volledigeTekst);\n\n  const vacatureNummer =\n    zoekWaarde(onderwerp, /\\b(VNR-\\d+)\\b/i) ||\n    zoekWaarde(vacatureTekst, /\\b(VNR-\\d+)\\b/i);\n\n  let vacatureTitel = zoekWaarde(\n    onderwerp,\n    /Nieuwe opdracht\\s*[-–—]\\s*(.+?)\\s*\\(VNR-\\d+\\)/i\n  );\n\n  if (!vacatureTitel) {\n    vacatureTitel = zoekWaarde(\n      vacatureTekst,\n      /zijn we op zoek naar\\s+(?:een\\s*:?\\s*)?(.+?)\\s*\\(VNR-\\d+\\)/i\n    );\n  }\n\n  if (!vacatureTitel) {\n    vacatureTitel = onderwerp\n      .replace(/^Circle8\\s*[-–—]\\s*/i, '')\n      .replace(/^Nieuwe opdracht\\s*[-–—]\\s*/i, '')\n      .replace(/\\s*\\(VNR-\\d+\\)\\s*/i, '')\n      .trim();\n  }\n\n  const opdrachtgever = zoekWaarde(\n    vacatureTekst,\n    /Voor onze opdrachtgever\\s+(.+?)\\s+zijn we op zoek naar/i\n  );\n\n  const sluitingsdatum = zoekWaarde(\n    vacatureTekst,\n    /Uiterlijk aanleveren op\\s+([0-9]{1,2}-[0-9]{1,2}-[0-9]{4}\\s+[0-9]{1,2}:[0-9]{2})/i\n  );\n\n  const standplaats = zoekWaarde(\n    vacatureTekst,\n    /Standplaats\\s*:\\s*([^\\n]+)/i\n  );\n\n  const schaal = zoekWaarde(\n    vacatureTekst,\n    /Schaal\\s*:\\s*([^\\n]+)/i\n  );\n\n  const maximaalUurtarief = zoekWaarde(\n    vacatureTekst,\n    /Maximaal uurtarief[^€\\d]*€?\\s*([\\d.,]+)/i\n  );\n\n  const urenPerWeek = zoekWaarde(\n    vacatureTekst,\n    /(\\d{1,2}\\s*[-–]\\s*\\d{1,2}\\s*uur per week)/i\n  );\n\n  const vacatureUrl = haalVacatureUrlUitHtml(bodyInhoud);\n\n  output.push({\n    json: {\n      vacatureTitel,\n      vacatureTekst,\n      vacatureUrl,\n\n      vacatureNummer,\n      opdrachtgever,\n      sluitingsdatum,\n      standplaats,\n      schaal,\n      maximaalUurtarief,\n      urenPerWeek,\n\n      broker: bericht.broker ?? 'Circle8',\n      brokerEmail:\n        bericht.brokerEmail ??\n        'recruitment@circle8.nl',\n\n      emailOntvangenOp:\n        bericht.emailOntvangenOp ??\n        bericht.receivedDateTime ??\n        bericht.sentDateTime ??\n        '',\n\n      bronBerichtId:\n        bericht.bronBerichtId ??\n        bericht.id ??\n        '',\n\n      bronBerichtOnderwerp: onderwerp\n    }\n  });\n}\n\nreturn output;"
+      },
+      "id": "46e3a30f-3b21-4897-a585-34205ea0462e",
+      "name": "Code-Circle8 e-mail naar vacature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1936,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// de Publieke Partner: bouwt de WordPress REST API-URL met de opdrachten\n// (posts) van de dag waarop de e-mail is ontvangen. De opdrachtenlijst op de\n// website is AJAX-gepagineerd (en nonce-beveiligd); de REST API geeft\n// betrouwbaar alle opdrachten van die dag terug.\n\nfunction pad(n) {\n  return String(n).padStart(2, '0');\n}\n\nfunction dagReferentie(item) {\n  const ontvangen =\n    item.json.emailOntvangenOp ||\n    item.json.receivedDateTime ||\n    item.json.sentDateTime ||\n    '';\n\n  const d = ontvangen ? new Date(ontvangen) : new Date();\n\n  if (isNaN(d.getTime())) {\n    return new Date();\n  }\n\n  return d;\n}\n\nconst items = $input.all();\n\nif (items.length === 0) {\n  return [];\n}\n\nconst eerste = items[0];\nconst ref = dagReferentie(eerste);\n\nconst dagStart =\n  `${ref.getFullYear()}-${pad(ref.getMonth() + 1)}-${pad(ref.getDate())}T00:00:00`;\n\nconst volgende = new Date(ref.getTime());\nvolgende.setDate(volgende.getDate() + 1);\n\nconst dagEindStart =\n  `${volgende.getFullYear()}-${pad(volgende.getMonth() + 1)}-${pad(volgende.getDate())}T00:00:00`;\n\nconst restUrl =\n  'https://depubliekepartner.nl/wp-json/wp/v2/posts' +\n  `?after=${encodeURIComponent(dagStart)}` +\n  `&before=${encodeURIComponent(dagEindStart)}` +\n  '&per_page=100&orderby=date&order=desc' +\n  '&_fields=id,date,link,title';\n\nconst bronBerichten = items.map((it) => ({\n  bronBerichtId: it.json.bronBerichtId || it.json.id || '',\n  bronBerichtOnderwerp: it.json.bronBerichtOnderwerp || it.json.subject || '',\n  brokerEmail: it.json.brokerEmail || '',\n}));\n\nreturn [\n  {\n    json: {\n      restUrl,\n      dagStart,\n      dagEindStart,\n      broker: eerste.json.broker || 'de Publieke Partner',\n      brokerEmail:\n        eerste.json.brokerEmail || 'recruitment@depubliekepartner.nl',\n      bronBerichtId: eerste.json.bronBerichtId || eerste.json.id || '',\n      bronBerichtOnderwerp:\n        eerste.json.bronBerichtOnderwerp || eerste.json.subject || '',\n      emailOntvangenOp:\n        eerste.json.emailOntvangenOp ||\n        eerste.json.receivedDateTime ||\n        eerste.json.sentDateTime ||\n        '',\n      bronBerichten,\n    },\n  },\n];\n"
+      },
+      "id": "3014f5e8-fbbb-49a5-afa0-6cb887c5ff91",
+      "name": "Code-DPP bouw lijst-URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2080,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.restUrl }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "0d9d9101-75ab-498f-bf8e-0dc56e58b180",
+      "name": "HTTP Request-DPP lijst",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1904,
+        -160
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500
+    },
+    {
+      "parameters": {
+        "jsCode": "// de Publieke Partner: zet de REST API-respons om naar losse vacature-items.\n\nconst meta = (() => {\n  try {\n    return $('Code-DPP bouw lijst-URL').first().json || {};\n  } catch (e) {\n    return {};\n  }\n})();\n\nconst gevonden = new Set();\nconst result = [];\n\nfunction decodeTitel(value = '') {\n  return String(value)\n    .replace(/&#8211;/g, '–')\n    .replace(/&#8212;/g, '—')\n    .replace(/&#8217;/g, \"'\")\n    .replace(/&#039;/g, \"'\")\n    .replace(/&nbsp;/gi, ' ')\n    .replace(/&amp;/gi, '&')\n    .replace(/&quot;/gi, '\"')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nfunction verwerkPost(post) {\n  if (!post || typeof post !== 'object') {\n    return;\n  }\n\n  const url = post.link || post.url || '';\n\n  if (!url) {\n    return;\n  }\n\n  const schoon = String(url).replace(/&amp;/gi, '&').trim();\n\n  if (!schoon || gevonden.has(schoon)) {\n    return;\n  }\n\n  gevonden.add(schoon);\n\n  const titelRuw =\n    (post.title && (post.title.rendered || post.title)) || '';\n\n  result.push({\n    json: {\n      vacatureUrl: schoon,\n      vacatureTitel: decodeTitel(titelRuw),\n      broker: meta.broker || 'de Publieke Partner',\n      brokerEmail: meta.brokerEmail || 'recruitment@depubliekepartner.nl',\n      bronBerichtId: meta.bronBerichtId || '',\n      bronBerichtOnderwerp: meta.bronBerichtOnderwerp || '',\n      emailOntvangenOp: meta.emailOntvangenOp || '',\n    },\n  });\n}\n\nfor (const item of $input.all()) {\n  const j = item.json;\n\n  if (Array.isArray(j)) {\n    j.forEach(verwerkPost);\n    continue;\n  }\n\n  if (Array.isArray(j.data)) {\n    j.data.forEach(verwerkPost);\n    continue;\n  }\n\n  if (Array.isArray(j.body)) {\n    j.body.forEach(verwerkPost);\n    continue;\n  }\n\n  verwerkPost(j);\n}\n\nlet limiet = 100;\n\ntry {\n  const cfg = $('Code-Configuratie').first().json;\n  if (cfg && cfg.testmodus && Number(cfg.maximaalAantalVacatures) > 0) {\n    limiet = Number(cfg.maximaalAantalVacatures);\n  }\n} catch (e) {}\n\nreturn result.slice(0, limiet);\n"
+      },
+      "id": "66ccbf66-a49a-4100-b15c-637d2fdf3e46",
+      "name": "Code-DPP vacature-URLs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1648,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.vacatureUrl }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 5
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "d55c9836-1bfc-41c1-a2e3-6c15f8344d2d",
+      "name": "HTTP Request-DPP detail",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1456,
+        -160
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500
+    },
+    {
+      "parameters": {
+        "jsCode": "// de Publieke Partner: haalt titel en volledige vacaturetekst uit elke\n// detailpagina (inhoudsblok + JSON-LD JobPosting als fallback).\n\nconst httpItems = $input.all();\nconst urlItems = $('Code-DPP vacature-URLs').all();\n\nfunction decodeHtml(value = '') {\n  return String(value)\n    .replace(/&#(\\d+);/g, (_, code) => String.fromCodePoint(Number(code)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, code) =>\n      String.fromCodePoint(parseInt(code, 16))\n    )\n    .replace(/&nbsp;/gi, ' ')\n    .replace(/&amp;/gi, '&')\n    .replace(/&quot;/gi, '\"')\n    .replace(/&apos;/gi, \"'\")\n    .replace(/&#39;/gi, \"'\")\n    .replace(/&lt;/gi, '<')\n    .replace(/&gt;/gi, '>')\n    .replace(/&euro;/gi, '€');\n}\n\nfunction htmlNaarTekst(html = '') {\n  return decodeHtml(\n    String(html)\n      .replace(/<script\\b[^>]*>[\\s\\S]*?<\\/script>/gi, ' ')\n      .replace(/<style\\b[^>]*>[\\s\\S]*?<\\/style>/gi, ' ')\n      .replace(/<noscript\\b[^>]*>[\\s\\S]*?<\\/noscript>/gi, ' ')\n      .replace(/<svg\\b[^>]*>[\\s\\S]*?<\\/svg>/gi, ' ')\n      .replace(/<!--[\\s\\S]*?-->/g, ' ')\n      .replace(/<(br|hr)\\s*\\/?>/gi, '\\n')\n      .replace(/<\\/(p|div|section|article|li|h1|h2|h3|h4|h5|h6|tr)>/gi, '\\n')\n      .replace(/<li\\b[^>]*>/gi, '• ')\n      .replace(/<[^>]+>/g, ' ')\n  )\n    .replace(/\\r/g, '')\n    .replace(/[ \\t]+/g, ' ')\n    .replace(/ *\\n */g, '\\n')\n    .replace(/\\n{3,}/g, '\\n\\n')\n    .trim();\n}\n\nfunction parseJsonLdJob(html) {\n  const blocks =\n    String(html).match(\n      /<script[^>]+application\\/ld\\+json[^>]*>([\\s\\S]*?)<\\/script>/gi\n    ) || [];\n\n  for (const b of blocks) {\n    const raw = b\n      .replace(/<script[^>]*>/i, '')\n      .replace(/<\\/script>/i, '')\n      .trim();\n\n    let data;\n    try {\n      data = JSON.parse(raw);\n    } catch (e) {\n      continue;\n    }\n\n    const arr = Array.isArray(data) ? data : [data];\n\n    for (const it of arr) {\n      const t = it && it['@type'];\n      if (t === 'JobPosting' || (Array.isArray(t) && t.includes('JobPosting'))) {\n        return it;\n      }\n    }\n  }\n\n  return null;\n}\n\nfunction extractContentBlock(html) {\n  const conts =\n    String(html).match(\n      /<div class=\"elementor-widget-container\">([\\s\\S]*?)<\\/div>/gi\n    ) || [];\n\n  const landmarks =\n    /Opdrachtomschrijving|Functieomschrijving|Eisen|Wensen|Taken|Aanvraagnummer|Contractvorm|Sluitingsdatum|Startdatum|Uren per week/i;\n\n  const seen = new Set();\n  let combined = '';\n\n  for (const c of conts) {\n    const inner = c\n      .replace(/^<div class=\"elementor-widget-container\">/i, '')\n      .replace(/<\\/div>$/i, '');\n\n    const txt = htmlNaarTekst(inner);\n\n    if (!landmarks.test(txt)) continue;\n    if (txt.length < 40 || seen.has(txt)) continue;\n\n    seen.add(txt);\n    combined += (combined ? '\\n\\n' : '') + txt;\n  }\n\n  return combined.trim();\n}\n\nfunction schoonTitel(value = '') {\n  return String(value)\n    .replace(/\\s*\\|.*$/, '')\n    .replace(/&#8211;/g, '–')\n    .replace(/&#8212;/g, '—')\n    .replace(/&#8217;/g, \"'\")\n    .replace(/&amp;/gi, '&')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nreturn httpItems.map((item, index) => {\n  const httpData = item.json ?? {};\n  const urlData = urlItems[index]?.json ?? {};\n\n  const ruweHtml =\n    typeof httpData.data === 'string'\n      ? httpData.data\n      : typeof httpData.body === 'string'\n        ? httpData.body\n        : typeof httpData.content === 'string'\n          ? httpData.content\n          : '';\n\n  const job = parseJsonLdJob(ruweHtml) || {};\n  const blockText = extractContentBlock(ruweHtml);\n  const jsonLdText = job.description ? htmlNaarTekst(job.description) : '';\n\n  const titleTag = String(ruweHtml).match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i);\n\n  const vacatureTitel =\n    schoonTitel(urlData.vacatureTitel || job.title || '') ||\n    schoonTitel(htmlNaarTekst(titleTag ? titleTag[1] : ''));\n\n  let vacatureTekst;\n  if (blockText && blockText.length >= 80) {\n    vacatureTekst = blockText;\n  } else if (jsonLdText && jsonLdText.length >= 80) {\n    vacatureTekst = jsonLdText;\n  } else {\n    vacatureTekst = htmlNaarTekst(ruweHtml);\n  }\n\n  const opdrachtgever =\n    (job.hiringOrganization && job.hiringOrganization.name) || '';\n\n  return {\n    json: {\n      vacatureTitel,\n      vacatureTekst,\n      vacatureUrl: urlData.vacatureUrl || httpData.url || '',\n      broker: urlData.broker || 'de Publieke Partner',\n      brokerEmail: urlData.brokerEmail || 'recruitment@depubliekepartner.nl',\n      opdrachtgever,\n      emailOntvangenOp: urlData.emailOntvangenOp || '',\n      bronBerichtId: urlData.bronBerichtId || '',\n      bronBerichtOnderwerp: urlData.bronBerichtOnderwerp || '',\n      bronHtml: ruweHtml,\n    },\n    pairedItem: { item: index },\n  };\n});\n"
+      },
+      "id": "00852209-1437-4d6f-a508-456b8a75a8d8",
+      "name": "Code-DPP detail",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1280,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst cfg = $('Code-Configuratie').first().json;\nconst staticData = $getWorkflowStaticData('global');\n\nif (\n  !staticData.verwerkteVacatures ||\n  typeof staticData.verwerkteVacatures !== 'object'\n) {\n  staticData.verwerkteVacatures = {};\n}\n\nconst bewaartermijnDagen = Number(cfg.deduplicatieDagen || 90);\nconst grens =\n  Date.now() - bewaartermijnDagen * 24 * 60 * 60 * 1000;\n\nfor (const [sleutel, datum] of Object.entries(\n  staticData.verwerkteVacatures\n)) {\n  const tijd = new Date(datum).getTime();\n\n  if (!tijd || tijd < grens) {\n    delete staticData.verwerkteVacatures[sleutel];\n  }\n}\n\nfunction normaliseer(value = '') {\n  return String(value)\n    .trim()\n    .toLowerCase()\n    .replace(/#.*$/, '')\n    .replace(/([?&])utm_[^=&]+=[^&]*/g, '$1')\n    .replace(/[?&]+$/, '')\n    .replace(/\\s+/g, ' ');\n}\n\nfunction maakSleutel(data = {}) {\n  const url = normaliseer(data.vacatureUrl);\n\n  if (url) {\n    return `url:${url}`;\n  }\n\n  const nummer = normaliseer(\n    data.vacatureNummer ||\n    data.referentienummer ||\n    data.referenceNumber\n  );\n\n  if (nummer) {\n    return `nummer:${normaliseer(data.broker)}:${nummer}`;\n  }\n\n  return [\n    'fallback',\n    normaliseer(data.broker),\n    normaliseer(data.vacatureTitel),\n    normaliseer(data.opdrachtgever),\n    normaliseer(data.bronBerichtId)\n  ].join(':');\n}\n\nconst output = [];\nconst gezienInDezeRun = new Set();\n\nfor (let index = 0; index < items.length; index++) {\n  const item = items[index];\n  const data = item.json || {};\n  const fouten = [];\n\n  if (!String(data.vacatureTitel || '').trim()) {\n    fouten.push('vacatureTitel ontbreekt');\n  }\n\n  if (!String(data.vacatureTekst || '').trim()) {\n    fouten.push('vacatureTekst ontbreekt');\n  }\n\n  if (!String(data.broker || '').trim()) {\n    fouten.push('broker ontbreekt');\n  }\n\n  if (!String(data.bronBerichtId || '').trim()) {\n    fouten.push('bronBerichtId ontbreekt');\n  }\n\n  if (fouten.length > 0) {\n    throw new Error(\n      `Vacaturevalidatie mislukt voor item ${index + 1}: ` +\n      `${fouten.join(', ')}. Bron: ` +\n      `${data.bronBerichtOnderwerp || data.vacatureUrl || 'onbekend'}`\n    );\n  }\n\n  const deduplicatieSleutel = maakSleutel(data);\n\n  if (\n    gezienInDezeRun.has(deduplicatieSleutel) ||\n    staticData.verwerkteVacatures[deduplicatieSleutel]\n  ) {\n    continue;\n  }\n\n  gezienInDezeRun.add(deduplicatieSleutel);\n\n  output.push({\n    json: {\n      ...data,\n      deduplicatieSleutel,\n      validatieStatus: 'geldig',\n      workflowVersie: cfg.workflowVersie || '1.1'\n    },\n    pairedItem: {\n      item: index\n    }\n  });\n}\n\nreturn output;"
+      },
+      "id": "9fb13746-a71d-435c-8507-22eb4ef2eaf6",
+      "name": "Code-Validatie + Deduplicatie",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1480,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const moveResultaten = $input.all();\nconst cfg = $('Code-Configuratie').first().json;\nconst staticData = $getWorkflowStaticData('global');\n\nif (\n  !staticData.verwerkteVacatures ||\n  typeof staticData.verwerkteVacatures !== 'object'\n) {\n  staticData.verwerkteVacatures = {};\n}\n\nlet analyseItems = [];\n\ntry {\n  analyseItems = $('Code-JSON.parse').all();\n} catch (e) {}\n\nconst uitgevoerdOp = new Date().toISOString();\nconst sleutels = new Set();\nconst vacatures = new Set();\nconst matches = [];\n\nfor (const item of analyseItems) {\n  const data = item.json || {};\n  const sleutel = String(data.deduplicatieSleutel || '').trim();\n\n  if (sleutel) {\n    sleutels.add(sleutel);\n    vacatures.add(sleutel);\n  }\n\n  if (Number(data.score) >= Number(cfg.minimumScore || 7)) {\n    matches.push({\n      medewerker: data.medewerker || '',\n      score: Number(data.score || 0),\n      vacatureTitel: data.vacatureTitel || '',\n      broker: data.broker || ''\n    });\n  }\n}\n\nif (!cfg.testmodus) {\n  for (const sleutel of sleutels) {\n    staticData.verwerkteVacatures[sleutel] = uitgevoerdOp;\n  }\n}\n\nreturn [\n  {\n    json: {\n      status: 'succes',\n      workflowNaam: cfg.workflowNaam || 'Taxonic vacatureselectie',\n      workflowVersie: cfg.workflowVersie || '1.1',\n      uitgevoerdOp,\n      testmodus: Boolean(cfg.testmodus),\n      aantalVacatures: vacatures.size,\n      aantalMatches: matches.length,\n      aantalGearchiveerdeBronberichten: moveResultaten.length,\n      opgeslagenVoorDeduplicatie: cfg.testmodus ? 0 : sleutels.size,\n      matches\n    }\n  }\n];"
+      },
+      "id": "06772ced-a11a-467d-a75d-7767f5db7b9f",
+      "name": "Log-Uitvoering + Commit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        -480
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code-Configuratie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many messages": {
+      "main": [
+        [
+          {
+            "node": "Code-Bron herkennen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code-Titel + Tekst + URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code-JSON.parse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code-Titel + Tekst + URL": {
+      "main": [
+        [
+          {
+            "node": "Code-Validatie + Deduplicatie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code-Exctract URL": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code-JSON.parse": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code-Configuratie": {
+      "main": [
+        [
+          {
+            "node": "Get many messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code-Unieke bronberichten": {
+      "main": [
+        [
+          {
+            "node": "Move a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code-Unieke bronberichten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code-Bron herkennen": {
+      "main": [
+        [
+          {
+            "node": "Switch-Bron",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch-Bron": {
+      "main": [
+        [
+          {
+            "node": "Code-Exctract URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code-Circle8 e-mail naar vacature",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [],
+        [
+          {
+            "node": "Code-DPP bouw lijst-URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code-Circle8 e-mail naar vacature": {
+      "main": [
+        [
+          {
+            "node": "Code-Validatie + Deduplicatie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code-DPP bouw lijst-URL": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request-DPP lijst",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request-DPP lijst": {
+      "main": [
+        [
+          {
+            "node": "Code-DPP vacature-URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code-DPP vacature-URLs": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request-DPP detail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request-DPP detail": {
+      "main": [
+        [
+          {
+            "node": "Code-DPP detail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code-DPP detail": {
+      "main": [
+        [
+          {
+            "node": "Code-Validatie + Deduplicatie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code-Validatie + Deduplicatie": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move a message": {
+      "main": [
+        [
+          {
+            "node": "Log-Uitvoering + Commit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "executionTimeout": 1800
+  },
+  "staticData": {
+    "global": {
+      "verwerkteVacatures": {}
+    }
+  },
+  "pinData": {},
+  "triggerCount": 0,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "active": false
+}
