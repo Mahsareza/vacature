@@ -1,1 +1,1 @@
-1.5.4. Stabiebele versie
+1.6 Stabiebele werkende versie met 3 brokers
