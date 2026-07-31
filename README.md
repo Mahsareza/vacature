@@ -1,1 +1,1 @@
-1.5.4. Goede, stabiebele versie
+1.5.4. Stabiebele versie
