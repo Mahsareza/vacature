@@ -6,3 +6,4 @@
 1.12.3 Stabiebele werkende versie met 8 brokers
 1.13.2 Stabiebele werkende versie met 9 brokers
 1.14.3 Stabiebele werkende versie met 10 brokers
+1.15.1 Stabiebele werkende versie met 11 brokers
